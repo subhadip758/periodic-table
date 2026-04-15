@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Anime.js Periodic Table Auto Layout animation</title>
+  <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+  <div class="controls">
+    <div class="controls-group search-group br">
+      <input type="text" id="searchInput" placeholder="Search element..." class="search-input" />
+      <select id="categoryFilter" class="category-select">
+        <option value="all">All Elements</option>
+        <option value="0">Reactive Nonmetals</option>
+        <option value="1">Noble Gases</option>
+        <option value="2">Alkali Metals</option>
+        <option value="3">Alkaline Earth Metals</option>
+        <option value="4">Metalloids</option>
+        <option value="5">Post-transition</option>
+        <option value="6">Transition Metals</option>
+        <option value="7">Lanthanides</option>
+        <option value="8">Actinides</option>
+        <option value="9">Unknown</option>
+      </select>
+    </div>
+    <div class="controls-group display br">
+      <button class="is-active toggle" id="table">table</button>
+      <button class="toggle" id="sphere">sphere</button>
+      <button class="toggle" id="helix">helix</button>
+      <button class="toggle" id="grid">grid</button>
+      <button class="toggle" id="shuffle">shuffle</button>
+    </div>
+    <div class="controls-group util br">
+      <button class="toggle util-btn" id="autoSpin">spin 🪐</button>
+    </div>
+  </div>
+  <div id="scene">
+    <div id="scene-content" data-layout="table"></div>
+  </div>
+
+  <template id="element">
+    <button class="element" data-color="0">
+      <div class="element-number"></div>
+      <div class="element-symbol"></div>
+      <div class="element-title"></div>
+      <div class="element-description"></div>
+      <a href="#" class="element-wiki" target="_blank" onclick="event.stopPropagation()">Wikipedia ↗</a>
+    </button>
+  </template>
+  <script type="module" src="./script.js"></script>
+
+  <div class="credits">
+    <span class="subhadip-footer">Made with ❤️ by Subhadip</span>
+  </div>
+</body>
+
+</html>
