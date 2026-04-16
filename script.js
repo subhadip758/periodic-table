@@ -1,4 +1,5 @@
 import { createLayout, utils, stagger, spring, createTimer, createAnimatable } from 'https://esm.sh/animejs@4.3.0';
+import { elementDetails } from './elementDetails.js';
 
 // Elements data to populate the table
 
@@ -306,6 +307,9 @@ document.addEventListener('click', event => {
     });
     return;
   }
+  if (event.target.closest('.element-wiki') || event.target.closest('.element-explore')) {
+    return;
+  }
   const $card = event.target.closest('#scene-content .element');
   const shouldExpand = $card && !$card.classList.contains('is-expanded');
   elementsLayout.update(() => {
@@ -388,5 +392,533 @@ if ($autoSpin) {
     isAutoSpinning = !isAutoSpinning;
     $autoSpin.classList.toggle('is-active', isAutoSpinning);
     $autoSpin.textContent = isAutoSpinning ? 'spin 🪐 (ON)' : 'spin 🪐';
+  });
+}
+
+// --- Advanced Learning Features Logic ---
+
+// 1. Explore Details Side Panel
+const $elementPanel = document.getElementById('elementPanel');
+const $closePanel = document.getElementById('closePanel');
+
+document.addEventListener('click', event => {
+  if (event.target.closest('.element-explore')) {
+    event.stopPropagation();
+    const $card = event.target.closest('.element');
+    const symbol = $card.querySelector('.element-symbol').textContent.trim();
+    const details = elementDetails[symbol];
+    
+    if (details) {
+      document.getElementById('panelTitle').textContent = details.name || "Unknown";
+      const $exceptionContainer = document.getElementById('panelExceptionContainer');
+      const $exceptionText = document.getElementById('panelException');
+      if (details.exception) {
+        $exceptionText.textContent = details.exception;
+        $exceptionContainer.style.display = 'block';
+      } else {
+        $exceptionContainer.style.display = 'none';
+      }
+
+      document.getElementById('panelSymbol').textContent = symbol;
+      document.getElementById('panelBlock').textContent = details.block || "Unknown";
+      document.getElementById('panelConfig').textContent = details.electronConfiguration || "Unknown";
+      
+      document.getElementById('panelValence').textContent = details.valenceConfig || "Unknown";
+      
+      // Calculate Bohr Shells dynamically
+      let shells = [];
+      if (details.electronConfiguration) {
+        const parts = details.electronConfiguration.replace(/\[.*?\]/g, '').trim().split(' ');
+        let shellMap = {};
+        parts.forEach(p => {
+           let match = p.match(/(\d)[spdf](\d+)/);
+           if(match) {
+              let n = parseInt(match[1]);
+              let e = parseInt(match[2]);
+              shellMap[n] = (shellMap[n] || 0) + e;
+           }
+        });
+        for(let i=1; i<=7; i++) {
+           if(shellMap[i]) shells.push(shellMap[i]);
+        }
+      }
+      document.getElementById('panelShells').textContent = shells.length ? shells.join(', ') : "Unknown";
+
+      document.getElementById('panelEN').textContent = details.electronegativity || "N/A";
+      document.getElementById('panelRadius').textContent = details.atomicRadius || "N/A";
+      document.getElementById('panelIE').textContent = details.ionizationEnergy || "N/A";
+      document.getElementById('panelEA').textContent = details.electronAffinity || "N/A";
+      document.getElementById('panelOxStates').textContent = details.oxidationStates || "N/A";
+      document.getElementById('panelPhase').textContent = details.phase || "Unknown";
+      document.getElementById('panelMelt').textContent = details.meltingPoint || "N/A";
+      document.getElementById('panelBoil').textContent = details.boilingPoint || "N/A";
+      document.getElementById('panelDensity').textContent = details.density || "N/A";
+      document.getElementById('panelDiscoverer').textContent = details.discoverer || "Unknown";
+      document.getElementById('panelSummary').innerHTML = details.summary || "No description available.";
+      
+      $elementPanel.classList.add('open');
+    }
+  }
+});
+
+if ($closePanel) {
+  $closePanel.addEventListener('click', () => {
+    $elementPanel.classList.remove('open');
+  });
+}
+
+// 2. Learning Guide Modal
+const $guideModal = document.getElementById('guideModal');
+const $learningGuideBtn = document.getElementById('learningGuideBtn');
+const $closeGuide = document.getElementById('closeGuide');
+
+if ($learningGuideBtn) {
+  $learningGuideBtn.addEventListener('click', () => {
+    $guideModal.classList.add('open');
+  });
+}
+
+if ($closeGuide) {
+  $closeGuide.addEventListener('click', () => {
+    $guideModal.classList.remove('open');
+  });
+}
+
+// 3. Periodic Trends Heatmap
+const $trendFilter = document.getElementById('trendFilter');
+
+// Utility function to map a value to a color gradient (Blue to Red)
+function getHeatmapColor(val, min, max) {
+  if (val === null || val === undefined || isNaN(val)) return 'var(--color-5)'; // Default fallback
+  if (max === min) return 'hsl(0, 80%, 50%)'; // Prevent division by zero
+  const normalized = (val - min) / (max - min); // 0 to 1
+  // Calculate HSL: Blue (240) to Red (0)
+  const hue = (1 - normalized) * 240;
+  return `hsl(${hue}, 80%, 50%)`;
+}
+
+if ($trendFilter) {
+  $trendFilter.addEventListener('change', () => {
+    // Disable temp slider visually if not none
+    if ($trendFilter.value !== 'none') {
+       if($tempSlider) $tempSlider.value = 298;
+       if($tempValue) $tempValue.textContent = '298';
+    }
+    const trend = $trendFilter.value;
+    const cards = document.querySelectorAll('#scene-content .element');
+    
+    const $trendContainer = document.getElementById('trend-indicator-container');
+    const $horizArrow = document.getElementById('horizArrow');
+    const $vertArrow = document.getElementById('vertArrow');
+    const $trendText = document.getElementById('trendText');
+
+    if (trend === 'none') {
+      if ($trendContainer) $trendContainer.style.display = 'none';
+      // Reset colors
+      cards.forEach($card => {
+        $card.style.backgroundColor = '';
+        $card.style.borderColor = '';
+        // Wait, resetting to original state requires removing inline styles
+        $card.style.removeProperty('background-color');
+        $card.style.removeProperty('border-color');
+        
+        // Also restore children like element-symbol color
+        const childNodes = $card.querySelectorAll('*');
+        childNodes.forEach(child => {
+            child.style.removeProperty('color');
+        });
+      });
+      return;
+    }
+
+    // Find min and max for the selected trend
+    let min = Infinity;
+    let max = -Infinity;
+
+    if ($trendContainer) {
+      $trendContainer.style.display = 'flex';
+      if (trend === 'electronegativity') {
+        $trendText.textContent = "INCREASES";
+        $horizArrow.className = "trend-arrow horizontal-arrow"; // Points right
+        $vertArrow.className = "trend-arrow vertical-arrow reverse"; // Points up
+      } else if (trend === 'ionizationEnergy') {
+        $trendText.textContent = "INCREASES";
+        $horizArrow.className = "trend-arrow horizontal-arrow"; // Points right
+        $vertArrow.className = "trend-arrow vertical-arrow reverse"; // Points up
+      } else if (trend === 'atomicRadius') {
+        $trendText.textContent = "INCREASES";
+        $horizArrow.className = "trend-arrow horizontal-arrow reverse"; // Points left
+        $vertArrow.className = "trend-arrow vertical-arrow"; // Points down
+      }
+    }
+
+    cards.forEach($card => {
+      const symbol = $card.querySelector('.element-symbol').textContent.trim();
+      const details = elementDetails[symbol];
+      if (details && details[trend] !== null && details[trend] !== 'N/A' && !isNaN(details[trend])) {
+        const val = parseFloat(details[trend]);
+        if (val < min) min = val;
+        if (val > max) max = val;
+      }
+    });
+
+    // Apply colors
+    if ($trendContainer) {
+      $trendContainer.style.display = 'flex';
+      if (trend === 'electronegativity') {
+        $trendText.textContent = "INCREASES";
+        $horizArrow.className = "trend-arrow horizontal-arrow"; // Points right
+        $vertArrow.className = "trend-arrow vertical-arrow reverse"; // Points up
+      } else if (trend === 'ionizationEnergy') {
+        $trendText.textContent = "INCREASES";
+        $horizArrow.className = "trend-arrow horizontal-arrow"; // Points right
+        $vertArrow.className = "trend-arrow vertical-arrow reverse"; // Points up
+      } else if (trend === 'atomicRadius') {
+        $trendText.textContent = "INCREASES";
+        $horizArrow.className = "trend-arrow horizontal-arrow reverse"; // Points left
+        $vertArrow.className = "trend-arrow vertical-arrow"; // Points down
+      }
+    }
+
+    cards.forEach($card => {
+      const symbol = $card.querySelector('.element-symbol').textContent.trim();
+      const details = elementDetails[symbol];
+      let bgColor = 'rgba(255,255,255,0.05)'; // Very dark/grey for missing data
+      let textColor = 'rgba(255,255,255,0.2)';
+      
+      if (details && details[trend] !== null && details[trend] !== 'N/A' && !isNaN(details[trend])) {
+        const val = parseFloat(details[trend]);
+        bgColor = getHeatmapColor(val, min, max);
+        textColor = 'white';
+        $card.style.borderColor = 'rgba(255,255,255,0.6)';
+      } else {
+        $card.style.borderColor = 'rgba(255,255,255,0.1)';
+      }
+      
+      $card.style.backgroundColor = bgColor;
+      
+      const childNodes = $card.querySelectorAll('*');
+      childNodes.forEach(child => {
+        // Exception for Wiki and Explore links so they remain visible
+        if (!child.classList.contains('element-wiki') && !child.classList.contains('element-explore')) {
+            child.style.color = textColor;
+        }
+      });
+    });
+  });
+}
+
+
+const catInfo = {
+    "all": { title: "", desc: "" },
+    "0": { title: "Reactive Nonmetals", desc: "Elements with high electronegativity that eagerly gain electrons. Essential building blocks for biological life (like Carbon, Nitrogen, Oxygen)." },
+    "1": { title: "Noble Gases", desc: "Highly unreactive, odorless, and colorless gases. They have completely full valence electron shells, giving them immense chemical stability." },
+    "2": { title: "Alkali Metals", desc: "Extremely reactive metals with only 1 valence electron. They are so reactive they are never found free in nature and can explode in water!" },
+    "3": { title: "Alkaline Earth Metals", desc: "Reactive metals with 2 valence electrons. They are harder, denser, and slightly less reactive than Alkali metals." },
+    "4": { title: "Metalloids", desc: "Elements that bridge the gap, possessing physical and chemical properties intermediate between metals and nonmetals (e.g., Silicon)." },
+    "5": { title: "Post-transition Metals", desc: "Soft, brittle metals with lower melting points than transition metals. Aluminum and Lead are classic examples." },
+    "6": { title: "Transition Metals", desc: "Hard, shiny metals that act as excellent conductors. They often form beautifully colored compounds due to their d-orbital electrons." },
+    "7": { title: "Lanthanides", desc: "A series of similar rare-earth metallic elements, frequently used to synthesize powerful permanent magnets and solid-state lasers." },
+    "8": { title: "Actinides", desc: "Heavy, radioactive elements. While Uranium and Thorium exist naturally, the rest are synthetically produced in labs." },
+    "9": { title: "Unknown", desc: "Elements that are either so rare, so synthetic, or decay so rapidly that their bulk properties remain unconfirmed by science." }
+};
+
+const $categoryBanner = document.getElementById('categoryBanner');
+const $catBannerTitle = document.getElementById('catBannerTitle');
+const $catBannerDesc = document.getElementById('catBannerDesc');
+
+if ($categoryFilter) {
+  $categoryFilter.addEventListener('change', () => {
+    // Keep existing visibility filter logic running, plus banner logic
+    const cat = $categoryFilter.value;
+    if (cat === "all") {
+        $categoryBanner.style.display = "none";
+    } else {
+        $catBannerTitle.textContent = catInfo[cat].title;
+        $catBannerDesc.textContent = catInfo[cat].desc;
+        $categoryBanner.style.display = "block";
+    }
+  });
+}
+
+
+const $tempSlider = document.getElementById('tempSlider');
+const $tempValue = document.getElementById('tempValue');
+
+if ($tempSlider) {
+  $tempSlider.addEventListener('input', () => {
+    const tempInK = parseInt($tempSlider.value);
+    $tempValue.textContent = tempInK;
+    
+    // Auto-switch trend Filter to "none" if we are entering Phase mode
+    if ($trendFilter.value !== 'none') {
+        $trendFilter.value = 'none';
+        $trendFilter.dispatchEvent(new Event('change'));
+    }
+
+    const cards = document.querySelectorAll('#scene-content .element');
+    cards.forEach($card => {
+        const symbol = $card.querySelector('.element-symbol').textContent.trim();
+        const details = elementDetails[symbol];
+        
+        let bgColor = '';
+        let borderColor = '';
+        let opacity = '1';
+        
+        if (details) {
+            const melt = parseFloat(details.meltingPoint);
+            const boil = parseFloat(details.boilingPoint);
+            
+            if (!isNaN(melt) && !isNaN(boil)) {
+                if (tempInK >= boil) {
+                    // It's a GAS
+                    bgColor = 'rgba(100, 255, 100, 0.15)'; // faint green for gas
+                    borderColor = 'rgba(100, 255, 100, 0.4)';
+                    opacity = '0.7';
+                } else if (tempInK >= melt && tempInK < boil) {
+                    // It's a LIQUID
+                    bgColor = 'rgba(30, 144, 255, 0.8)'; // dodge blue for liquid
+                    borderColor = 'rgba(255, 255, 255, 0.8)';
+                } else {
+                    // It's a SOLID (revert to normal data-color)
+                    // We remove inline styles to let css data-color take over
+                    $card.style.removeProperty('background-color');
+                    $card.style.removeProperty('border-color');
+                    $card.style.opacity = '1';
+                    return; // skip applying overwrites
+                }
+            } else if (details.phase) {
+                 // Fallback to static phase if melting/boiling point data is missing
+                 // This primarily exists for synthetic elements
+                 if (details.phase.toLowerCase() === 'gas') {
+                    bgColor = 'rgba(100, 255, 100, 0.15)';
+                    borderColor = 'rgba(100, 255, 100, 0.4)';
+                    opacity = '0.7';
+                 } else if (details.phase.toLowerCase() === 'liquid') {
+                    bgColor = 'rgba(30, 144, 255, 0.8)';
+                    borderColor = 'rgba(255, 255, 255, 0.8)';
+                 } else {
+                    $card.style.removeProperty('background-color');
+                    $card.style.removeProperty('border-color');
+                    $card.style.opacity = '1';
+                    return;
+                 }
+            }
+        }
+        
+        $card.style.backgroundColor = bgColor;
+        $card.style.borderColor = borderColor;
+        $card.style.opacity = opacity;
+    });
+  });
+}
+
+// --- Sandbox Mechanics (App Modes, Atom Viewer, Reactions, Quiz) ---
+
+let currentMode = 'EXPLORE'; // EXPLORE, BUILDER, QUIZ
+
+const $btnExplore = document.getElementById('btnExplore');
+const $btnBuilder = document.getElementById('btnBuilder');
+const $btnQuiz = document.getElementById('btnQuiz');
+const $reactionCrucible = document.getElementById('reactionCrucible');
+const $quizHud = document.getElementById('quizHud');
+const $sceneContentNode = document.getElementById('scene-content');
+
+// Mode Switcher function
+function setAppMode(mode) {
+  currentMode = mode;
+  [$btnExplore, $btnBuilder, $btnQuiz].forEach(btn => { if (btn) btn.classList.remove('active'); });
+  
+  if (mode === 'EXPLORE') {
+    if ($btnExplore) $btnExplore.classList.add('active');
+    if ($reactionCrucible) $reactionCrucible.style.display = 'none';
+    if ($quizHud) $quizHud.style.display = 'none';
+    $sceneContentNode.classList.remove('quiz-mode-active');
+  } else if (mode === 'BUILDER') {
+    if ($btnBuilder) $btnBuilder.classList.add('active');
+    if ($reactionCrucible) $reactionCrucible.style.display = 'block';
+    if ($quizHud) $quizHud.style.display = 'none';
+    $sceneContentNode.classList.remove('quiz-mode-active');
+    builderElements = [];
+    updateBuilderUI();
+  } else if (mode === 'QUIZ') {
+    if ($btnQuiz) $btnQuiz.classList.add('active');
+    if ($reactionCrucible) $reactionCrucible.style.display = 'none';
+    if ($quizHud) $quizHud.style.display = 'block';
+    $sceneContentNode.classList.add('quiz-mode-active');
+    startQuizRound();
+  }
+}
+
+if ($btnExplore) $btnExplore.addEventListener('click', () => setAppMode('EXPLORE'));
+if ($btnBuilder) $btnBuilder.addEventListener('click', () => setAppMode('BUILDER'));
+if ($btnQuiz) $btnQuiz.addEventListener('click', () => setAppMode('QUIZ'));
+
+// Intercept Clicks for Modes
+document.addEventListener('click', event => {
+  const $card = event.target.closest('#scene-content .element');
+  if ($card) {
+    if (currentMode === 'BUILDER') {
+      event.stopPropagation();
+      handleBuilderClick($card);
+      return;
+    } else if (currentMode === 'QUIZ') {
+      event.stopPropagation();
+      handleQuizClick($card);
+      return;
+    }
+  }
+}, true); // Use capturing phase to intercept before original logic
+
+// --- Builder Logic ---
+let builderElements = [];
+function handleBuilderClick($card) {
+  const symbol = $card.querySelector('.element-symbol').textContent.trim();
+  if (builderElements.length < 2) {
+    builderElements.push(symbol);
+    updateBuilderUI();
+  }
+}
+
+function updateBuilderUI() {
+  document.getElementById('reactant1').textContent = builderElements[0] || '?';
+  document.getElementById('reactant2').textContent = builderElements[1] || '?';
+  document.getElementById('reactionResult').textContent = 'Waiting for reaction...';
+}
+
+if (document.getElementById('btnBuilderClear')) {
+  document.getElementById('btnBuilderClear').addEventListener('click', () => { builderElements = []; updateBuilderUI(); });
+}
+
+if (document.getElementById('btnReact')) {
+  document.getElementById('btnReact').addEventListener('click', () => {
+    if (builderElements.length < 2) {
+      document.getElementById('reactionResult').textContent = "Select 2 elements first!";
+      return;
+    }
+    const e1 = elementDetails[builderElements[0]];
+    const e2 = elementDetails[builderElements[1]];
+    if (!e1 || !e2) return;
+    
+    const en1 = parseFloat(e1.electronegativity);
+    const en2 = parseFloat(e2.electronegativity);
+    
+    if (isNaN(en1) || isNaN(en2)) {
+      document.getElementById('reactionResult').textContent = "Insufficient Electronegativity data to simulate bond.";
+      return;
+    }
+    
+    // Simple logic
+    const diff = Math.abs(en1 - en2);
+    let bondType = "";
+    if (diff > 1.7) bondType = "Ionic Bond ⚡";
+    else if (diff >= 0.4) bondType = "Polar Covalent Bond 💧";
+    else bondType = "Nonpolar Covalent Bond 🤝";
+    
+    document.getElementById('reactionResult').innerHTML = `
+      <strong>∆EN = ${diff.toFixed(2)}</strong><br>
+      Formation: <span style="color:var(--cyan-1)">${bondType}</span><br>
+      <i style="font-size:0.75rem">*Assuming standard oxidation pairings.</i>
+    `;
+  });
+}
+
+// --- Quiz Logic ---
+let quizTargetSymbol = "";
+let quizScore = 0;
+function startQuizRound() {
+  // pick random element from 1 to 100
+  const allCards = Array.from(document.querySelectorAll('#scene-content .element')).slice(0, 100);
+  const randomCard = allCards[Math.floor(Math.random() * allCards.length)];
+  quizTargetSymbol = randomCard.querySelector('.element-symbol').textContent.trim();
+  const details = elementDetails[quizTargetSymbol];
+  
+  document.getElementById('quizTarget').textContent = details ? details.name : quizTargetSymbol;
+}
+
+function handleQuizClick($card) {
+  const symbol = $card.querySelector('.element-symbol').textContent.trim();
+  if (symbol === quizTargetSymbol) {
+    // Correct
+    $card.style.backgroundColor = "rgba(0, 255, 0, 0.8)";
+    setTimeout(() => { $card.style.removeProperty('background-color'); }, 500);
+    quizScore++;
+    document.getElementById('quizScore').textContent = quizScore;
+    startQuizRound();
+  } else {
+    // Wrong
+    $card.style.backgroundColor = "rgba(255, 0, 0, 0.8)";
+    setTimeout(() => { $card.style.removeProperty('background-color'); }, 500);
+    quizScore = Math.max(0, quizScore - 1);
+    document.getElementById('quizScore').textContent = quizScore;
+  }
+}
+
+// --- 3D Atom Viewer Logic ---
+const $toggleAtomBtn = document.getElementById('toggleAtomBtn');
+const $atomContainer = document.getElementById('atomContainer');
+
+let atomAnim = null; // store anime instance
+
+if ($toggleAtomBtn && $atomContainer) {
+  $toggleAtomBtn.addEventListener('click', () => {
+    if ($atomContainer.style.display === 'none') {
+      $atomContainer.style.display = 'block';
+      $toggleAtomBtn.textContent = 'Hide 3D Atom Model ⚛️';
+      renderAtom();
+    } else {
+      $atomContainer.style.display = 'none';
+      if (atomAnim) { atomAnim.remove('.atom-orbit'); }
+      $atomContainer.innerHTML = ''; // clear
+      $toggleAtomBtn.textContent = 'View 3D Atom Model ⚛️';
+    }
+  });
+}
+
+function renderAtom() {
+  $atomContainer.innerHTML = '<div class="atom-nucleus"></div>';
+  
+  const symbol = document.getElementById('panelSymbol').textContent.trim();
+  const rawShellsText = document.getElementById('panelShells').textContent;
+  if (!rawShellsText || rawShellsText === "Unknown") return;
+  
+  const shells = rawShellsText.split(',').map(s => parseInt(s.trim()));
+  
+  // Create orbits based on shells
+  let baseRadius = 40;
+  shells.forEach((electronCount, shellIdx) => {
+    let radius = baseRadius + (shellIdx * 30);
+    
+    let orbit = document.createElement('div');
+    orbit.className = 'atom-orbit';
+    orbit.style.width = `${radius*2}px`;
+    orbit.style.height = `${radius*2}px`;
+    orbit.style.marginLeft = `-${radius}px`;
+    orbit.style.marginTop = `-${radius}px`;
+    
+    // random generic tilt to make it look 3d
+    let rx = (Math.random() * 60) + 10;
+    let ry = (Math.random() * 60) + 10;
+    
+    // Create electrons
+    let angleShift = 360 / electronCount;
+    for(let e=0; e<electronCount; e++) {
+      let electron = document.createElement('div');
+      electron.className = 'atom-electron';
+      electron.style.transform = `rotate(${angleShift * e}deg) translateY(-${radius}px)`;
+      // Actually translating the electron from the center makes it stick to the radius
+      orbit.appendChild(electron);
+    }
+    
+    $atomContainer.appendChild(orbit);
+  });
+  
+  // Assign CSS variables for dynamic 3D tilt
+  const orbits = document.querySelectorAll('.atom-orbit');
+  orbits.forEach(o => {
+     o.style.setProperty('--rx', (Math.random() * 60 + 20) + 'deg');
+     o.style.setProperty('--ry', (Math.random() * 60 + 20) + 'deg');
+     // Since the orbit is absolute center, we must append translate(-50%, -50%) in the keyframe to keep it there.
+     o.style.animation = `spinOrbit ${3 + Math.random()*4}s linear infinite`;
   });
 }

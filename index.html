@@ -36,7 +36,29 @@
     <div class="controls-group util br">
       <button class="toggle util-btn" id="autoSpin">spin 🪐</button>
     </div>
+    <div class="controls-group learn br">
+      <select id="trendFilter" class="category-select">
+        <option value="none">Heatmap: None</option>
+        <option value="electronegativity">Electronegativity</option>
+        <option value="atomicRadius">Atomic Radius</option>
+        <option value="ionizationEnergy">Ionization Energy</option>
+      </select>
+      
+      <div style="display:flex; flex-direction:column; align-items:center; min-width: 150px; background:var(--bg-4); border-radius:4px; padding:0 10px;">
+        <label for="tempSlider" style="color:var(--fg-1); font-size: 0.70rem; margin: 2px 0;">Env Temp: <span id="tempValue">298</span> K</label>
+        <input type="range" id="tempSlider" min="0" max="6000" step="5" value="298" style="width: 100%; margin-bottom: 4px; cursor: pointer;">
+      </div>
+
+      <button class="toggle util-btn" id="learningGuideBtn">Guide 📖</button>
+    </div>
   </div>
+  
+  <!-- Educational Category Banner -->
+  <div id="categoryBanner" style="display:none; position:fixed; bottom:60px; left:50%; transform:translateX(-50%); z-index:100; background:rgba(10,20,30,0.95); border-left:4px solid var(--cyan-1); border-right:4px solid var(--cyan-1); backdrop-filter:blur(10px); padding:15px 25px; border-radius:8px; color:var(--fg-1); font-size:0.95rem; text-align:center; max-width:600px; box-shadow:0 10px 25px rgba(0,255,255,0.15); transition: opacity 0.5s ease;">
+    <strong id="catBannerTitle" style="color:var(--cyan-1); font-size: 1.1rem; display:block; margin-bottom:5px;">Category Name</strong>
+    <span id="catBannerDesc">Description</span>
+  </div>
+
   <div id="scene">
     <div id="scene-content" data-layout="table"></div>
   </div>
@@ -47,10 +69,114 @@
       <div class="element-symbol"></div>
       <div class="element-title"></div>
       <div class="element-description"></div>
-      <a href="#" class="element-wiki" target="_blank" onclick="event.stopPropagation()">Wikipedia ↗</a>
+      <a href="#" class="element-wiki" target="_blank">Wikipedia ↗</a>
+      <div class="element-explore">Explore Details 🔍</div>
     </button>
   </template>
+  
+  <!-- Element Details Side Panel -->
+  <div id="elementPanel" class="side-panel">
+    <button id="closePanel" class="close-btn">&times;</button>
+    <div class="panel-content">
+            <h2 id="panelTitle">Element Name</h2>
+      <div id="panelExceptionContainer" style="display: none; padding: 10px; background-color: rgba(255, 60, 60, 0.15); border-left: 4px solid var(--red-1); margin-bottom: 15px; border-radius: 4px;">
+        <strong style="color: var(--red-1);">Exception ⚠️</strong>
+        <p id="panelException" style="margin-top: 5px; font-size: 0.85rem; color: var(--fg-1); line-height: 1.4;"></p>
+      </div>
+      <div class="panel-prop"><strong>Symbol:</strong> <span id="panelSymbol"></span></div>
+      <div class="panel-prop"><strong>Block:</strong> <span id="panelBlock"></span></div>
+      <div class="panel-prop"><strong>Electron Config:</strong> <span id="panelConfig"></span></div>
+      <div class="panel-prop"><strong>Valence (s,p,d) Config:</strong> <span id="panelValence"></span></div>
+<div class="panel-prop"><strong>Bohr Shells (K,L,M...):</strong> <span id="panelShells"></span></div>
+      <div class="panel-prop"><strong>Electronegativity:</strong> <span id="panelEN"></span></div>
+      <div class="panel-prop"><strong>Atomic Radius:</strong> <span id="panelRadius"></span></div>
+      <div class="panel-prop"><strong>Ionization Energy:</strong> <span id="panelIE"></span> kJ/mol</div>
+      <div class="panel-prop"><strong>Electron Affinity:</strong> <span id="panelEA"></span> kJ/mol</div>
+      <div class="panel-prop"><strong>Oxidation States:</strong> <span id="panelOxStates"></span></div>
+      <div class="panel-prop"><strong>Phase:</strong> <span id="panelPhase"></span></div>
+      <div class="panel-prop"><strong>Melting Point:</strong> <span id="panelMelt"></span> K</div>
+      <div class="panel-prop"><strong>Boiling Point:</strong> <span id="panelBoil"></span> K</div>
+      <div class="panel-prop"><strong>Density:</strong> <span id="panelDensity"></span></div>
+      <div class="panel-prop"><strong>Discoverer:</strong> <span id="panelDiscoverer"></span></div>
+      <br>
+      <div id="toggleAtomBtn" style="background:var(--magenta-1); color:white; padding:8px; border-radius:4px; text-align:center; cursor:pointer; font-weight:bold; margin-bottom:15px; box-shadow:0 0 10px var(--magenta-1);">View 3D Atom Model ⚛️</div>
+      <div id="atomContainer" style="display:none; position:relative; width:100%; height:250px; perspective:800px; padding:20px; margin-bottom:15px; border:1px solid rgba(255,255,255,0.1); border-radius:8px;"></div>
+
+      <br>
+      <div class="panel-summary" id="panelSummary"></div>
+    </div>
+  </div>
+
+  <!-- Learning Guide Modal -->
+  <div id="guideModal" class="modal">
+    <div class="modal-content">
+      <button id="closeGuide" class="close-btn">&times;</button>
+      <h2>Periodic Table Concepts Guide 📖</h2>
+      <div class="guide-section">
+        <h3>1. Periods and Groups (Beginner)</h3>
+        <p><strong>Periods</strong> are horizontal rows (1-7). Elements in the same period have the same number of electron shells.</p>
+        <p><strong>Groups</strong> are vertical columns (1-18). Elements in the same group have similar chemical properties and the same number of valence electrons.</p>
+      </div>
+      <div class="guide-section">
+        <h3>2. Element Blocks (Intermediate)</h3>
+        <p><strong>s-block:</strong> Alkali & Alkaline Earth metals. Highly reactive.</p>
+        <p><strong>p-block:</strong> Nonmetals, halogens, noble gases. Diverse properties.</p>
+        <p><strong>d-block:</strong> Transition metals. Good conductors, form colored compounds.</p>
+        <p><strong>f-block:</strong> Lanthanides & Actinides. Many are synthetic and radioactive.</p>
+      </div>
+      <div class="guide-section">
+        <h3>3. Periodic Trends (Advanced)</h3>
+        <p><strong>Electronegativity:</strong> tendency to attract electrons. Increases Up and to the Right.</p>
+        <p><strong>Atomic Radius:</strong> size of the atom. Increases Down and to the Left.</p>
+        <p><strong>Ionization Energy:</strong> energy to remove an electron. Increases Up and to the Right.</p>
+        <p><em>Use the Heatmap tool above to visualize these trends across the table!</em></p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Trend Indicators overlay -->
+  <div id="trend-indicator-container" style="display: none;">
+    <div class="trend-text" id="trendText">TREND: INCREASING</div>
+    <div class="trend-arrow horizontal-arrow" id="horizArrow">
+      <div class="line"></div><div class="head"></div>
+    </div>
+    <div class="trend-arrow vertical-arrow" id="vertArrow">
+      <div class="line"></div><div class="head"></div>
+    </div>
+  </div>
+
   <script type="module" src="./script.js"></script>
+
+  
+  <!-- App Mode Selector -->
+  <div id="modeSelector" style="position:fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--cyan-1);">
+    <button class="mode-btn active" id="btnExplore">🔍 EXPLORE</button>
+    <button class="mode-btn" id="btnBuilder">🧪 BUILDER</button>
+    <button class="mode-btn" id="btnQuiz">🎮 QUIZ</button>
+  </div>
+
+
+  <!-- Reaction Crucible (Builder Mode) -->
+  <div id="reactionCrucible" style="display:none; position:fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 100; background: rgba(20,30,48,0.95); width: 400px; padding: 20px; border-radius: 12px; border: 2px solid var(--magenta-1); box-shadow: 0 0 20px var(--magenta-1); color: var(--fg-1); text-align: center;">
+    <h3 style="color:var(--magenta-1); margin-bottom:10px; font-size:1.2rem;">Reaction Crucible 🧪</h3>
+    <p style="font-size:0.8rem; margin-bottom:15px;">Click up to 2 elements on the table to react them.</p>
+    <div style="display:flex; justify-content:space-around; align-items:center; margin-bottom:15px;">
+      <div id="reactant1" style="width:60px; height:60px; border:2px dashed var(--cyan-1); border-radius:8px; display:flex; justify-content:center; align-items:center; font-size:1.5rem; font-weight:bold;">?</div>
+      <div style="font-size:1.5rem; font-weight:bold; color:var(--yellow-1);">+</div>
+      <div id="reactant2" style="width:60px; height:60px; border:2px dashed var(--cyan-1); border-radius:8px; display:flex; justify-content:center; align-items:center; font-size:1.5rem; font-weight:bold;">?</div>
+    </div>
+    <button id="btnReact" style="background:var(--magenta-1); color:white; font-weight:bold; padding:10px 20px; border-radius:6px; cursor:pointer; width:100%;">REACT</button>
+    <div id="reactionResult" style="margin-top:15px; font-size:0.9rem; padding:10px; background:rgba(0,0,0,0.5); border-radius:4px; min-height:50px;">Waiting for reaction...</div>
+    <button id="btnBuilderClear" style="background:transparent; border:1px solid white; color:white; padding:5px 10px; font-size:0.7rem; border-radius:4px; margin-top:10px; cursor:pointer;">Clear</button>
+  </div>
+
+
+  <!-- Quiz HUD -->
+  <div id="quizHud" style="display:none; position:fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 100; background: rgba(0,0,0,0.85); padding: 15px 30px; border-radius: 12px; border: 2px solid var(--lime-1); color: white; text-align: center; box-shadow: 0 0 20px var(--lime-1);">
+    <div style="font-size:1.2rem; margin-bottom:10px;">Find the Element:</div>
+    <div id="quizTarget" style="font-size:2rem; font-weight:bold; color:var(--lime-1); margin-bottom:15px;">???</div>
+    <div style="font-size:1.2rem;">Score: <span id="quizScore">0</span></div>
+  </div>
 
   <div class="credits">
     <span class="subhadip-footer">Made with ❤️ by Subhadip</span>

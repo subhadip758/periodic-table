@@ -124,7 +124,7 @@ button.element:hover {
 
 .element.is-expanded {
   --w: 13rem;
-  --h: 13rem;
+  --h: 16rem;
   z-index: 1;
   padding: 1rem;
   align-items: flex-start;
@@ -771,4 +771,327 @@ fieldset>*:last-child {
 
 .element.is-expanded .element-wiki {
   display: inline-block;
+}
+
+/* Additional Interactive Learning Features */
+
+.element-explore {
+  display: none;
+  margin-top: auto;
+  background-color: var(--cyan-1);
+  color: var(--bg-1);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.element-explore:hover {
+  background-color: var(--white-1);
+  box-shadow: 0 0 10px var(--cyan-1);
+  color: var(--bg-1);
+}
+
+.element.is-expanded .element-explore {
+  display: inline-block;
+}
+
+/* Side Panel for Element Details */
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 350px;
+  height: 100%;
+  background: rgba(20, 30, 48, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 100;
+  transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+  color: var(--fg-1);
+}
+
+.side-panel.open {
+  right: 0;
+}
+
+.panel-content h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: var(--cyan-1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.panel-prop {
+  margin-bottom: 0.8rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.panel-prop strong {
+  color: var(--emerald-1);
+}
+
+.panel-summary {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--fg-2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1rem;
+}
+
+/* Modal for Learning Guide */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: rgba(20, 30, 48, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.modal-content h2 {
+  font-size: 1.8rem;
+  color: var(--yellow-1);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.guide-section {
+  margin-bottom: 1.5rem;
+}
+
+.guide-section h3 {
+  font-size: 1.2rem;
+  color: var(--cyan-1);
+  margin-bottom: 0.5rem;
+}
+
+.guide-section p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+  color: var(--fg-1);
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: var(--fg-1);
+  font-size: 2rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  width: auto;
+  padding: 0;
+  height: auto;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: var(--red-1);
+  background: none;
+}
+
+/* Gradient transition for elements */
+.element {
+  transition: opacity 0.4s ease, filter 0.4s, background-color 1s ease, color 1s ease;
+}
+
+/* Trend Indicators */
+#trend-indicator-container {
+  position: fixed;
+  bottom: 100px;
+  right: 50px;
+  z-index: 10;
+  width: 200px;
+  height: 200px;
+  pointer-events: none;
+  background: rgba(20,30,48,0.8);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  backdrop-filter: blur(8px);
+}
+
+.trend-text {
+  color: var(--cyan-1);
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.trend-arrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.trend-arrow .line {
+  background: linear-gradient(to right, rgba(0,0,255,0.5), rgba(255,0,0,1));
+}
+
+.horizontal-arrow {
+  width: 100%;
+  height: 10px;
+}
+.horizontal-arrow.reverse {
+  flex-direction: row-reverse;
+}
+.horizontal-arrow.reverse .line {
+  background: linear-gradient(to left, rgba(0,0,255,0.5), rgba(255,0,0,1));
+}
+
+.horizontal-arrow .line {
+  height: 4px;
+  flex-grow: 1;
+}
+.horizontal-arrow .head {
+  width: 0; 
+  height: 0; 
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid red;
+}
+.horizontal-arrow.reverse .head {
+  border-left: none;
+  border-right: 12px solid red;
+}
+
+.vertical-arrow {
+  height: 100px;
+  width: 10px;
+  flex-direction: column;
+  align-self: flex-start;
+  margin-left: 10px;
+}
+.vertical-arrow.reverse {
+  flex-direction: column-reverse;
+}
+.vertical-arrow .line {
+  background: linear-gradient(to bottom, rgba(255,0,0,1), rgba(0,0,255,0.5));
+  width: 4px;
+  flex-grow: 1;
+}
+.vertical-arrow.reverse .line {
+  background: linear-gradient(to top, rgba(255,0,0,1), rgba(0,0,255,0.5));
+}
+.vertical-arrow .head {
+  width: 0; 
+  height: 0; 
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid red;
+}
+.vertical-arrow.reverse .head {
+  border-top: none;
+  border-bottom: 12px solid red;
+}
+
+/* App Modes */
+.mode-btn {
+  background: transparent;
+  color: var(--fg-1);
+  border: none;
+  font-weight: bold;
+  font-size: 0.85rem;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 15px;
+  transition: all 0.3s;
+}
+.mode-btn:hover { background: rgba(255,255,255,0.1); }
+.mode-btn.active { background: var(--cyan-1); color: var(--bg-1); }
+
+/* Atom Viewer specific styles */
+.atom-nucleus {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle at center, var(--cyan-1), var(--sky-1));
+  border-radius: 50%;
+  box-shadow: 0 0 15px var(--cyan-1);
+  z-index: 10;
+}
+.atom-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px dashed rgba(0, 255, 255, 0.4);
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  box-sizing: border-box;
+}
+.atom-electron {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--magenta-1);
+  border-radius: 50%;
+  box-shadow: 0 0 5px var(--magenta-1);
+  top: -3px;
+  left: 50%;
+  margin-left: -3px;
+}
+
+/* Make text disappear in Quiz mode */
+.quiz-mode-active .element-title,
+.quiz-mode-active .element-symbol,
+.quiz-mode-active .element-number {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+@keyframes spinOrbit {
+  0% { transform: translate(-50%, -50%) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(0deg); }
+  100% { transform: translate(-50%, -50%) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(360deg); }
 }
